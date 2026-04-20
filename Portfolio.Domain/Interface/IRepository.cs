@@ -1,13 +1,13 @@
-﻿using Portfolio.Domain.Entities;
+using Portfolio.Domain.Entities;
 
 namespace Portfolio.Domain.Interface
 {
-    public interface IRepository<T> where T : EntityBase
+    public interface IRepository<T> where T : Entity
     {
-        IEnumerable<T> GetAll();
-        T GetById(Guid id);
-        void Add(T entity);
-        void Update(T entity);
-        void Delete(Guid id);
+        Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+        Task AddAsync(T entity, CancellationToken cancellationToken = default);
+        Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
+        Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }

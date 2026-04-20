@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Portfolio.Application.Interface;
 using Portfolio.Domain.Entities;
 
@@ -6,7 +6,7 @@ namespace PortfolioApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class BaseController<T> : ControllerBase where T : EntityBase
+    public class BaseController<T> : ControllerBase where T : Entity
     {
         protected readonly IAppService<T> _service;
 
@@ -16,29 +16,34 @@ namespace PortfolioApi.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAll() => Ok(_service.GetAll());
+        public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+            => Ok(await _service.GetAllAsync(cancellationToken));
 
-        [HttpGet("{id}")]
-        public IActionResult Get(Guid id) => Ok(_service.Get(id));
+        [HttpGet("{id:guid}")]
+        public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
+        {
+            var entity = await _service.GetAsync(id, cancellationToken);
+            return entity is null ? NotFound() : Ok(entity);
+        }
 
         [HttpPost]
-        public IActionResult Post(T entity)
+        public async Task<IActionResult> Post(T entity, CancellationToken cancellationToken)
         {
-            _service.Create(entity);
+            await _service.CreateAsync(entity, cancellationToken);
             return Ok(entity);
         }
 
         [HttpPut]
-        public IActionResult Put(T entity)
+        public async Task<IActionResult> Put(T entity, CancellationToken cancellationToken)
         {
-            _service.Update(entity);
+            await _service.UpdateAsync(entity, cancellationToken);
             return Ok(entity);
         }
 
-        [HttpDelete("{id}")]
-        public IActionResult Delete(Guid id)
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
-            _service.Delete(id);
+            await _service.DeleteAsync(id, cancellationToken);
             return Ok();
         }
     }

@@ -1,8 +1,7 @@
-﻿namespace Portfolio.Domain.Entities
+namespace Portfolio.Domain.Entities
 {
-    public class Mensagem
+    public class Mensagem : Entity
     {
-        public int Id { get; set; }
         public string Texto { get; set; } = string.Empty;
     }
 }

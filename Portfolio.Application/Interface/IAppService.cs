@@ -1,13 +1,13 @@
-﻿using Portfolio.Domain.Entities;
+using Portfolio.Domain.Entities;
 
 namespace Portfolio.Application.Interface
 {
-    public interface IAppService<T> where T : EntityBase
+    public interface IAppService<T> where T : Entity
     {
-        IEnumerable<T> GetAll();
-        T Get(Guid id);
-        void Create(T entity);
-        void Update(T entity);
-        void Delete(Guid id);
+        Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<T?> GetAsync(Guid id, CancellationToken cancellationToken = default);
+        Task CreateAsync(T entity, CancellationToken cancellationToken = default);
+        Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
+        Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }

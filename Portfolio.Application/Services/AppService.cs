@@ -1,9 +1,10 @@
-﻿using Portfolio.Application.Interface;
+using Portfolio.Application.Interface;
 using Portfolio.Domain.Entities;
 using Portfolio.Domain.Interface;
+
 namespace Portfolio.Application.Services
 {
-    public class AppService<T> : IAppService<T> where T : EntityBase
+    public class AppService<T> : IAppService<T> where T : Entity
     {
         protected readonly IRepository<T> _repository;
 
@@ -12,14 +13,19 @@ namespace Portfolio.Application.Services
             _repository = repository;
         }
 
-        public IEnumerable<T> GetAll() => _repository.GetAll();
+        public Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
+            => _repository.GetAllAsync(cancellationToken);
 
-        public T Get(Guid id) => _repository.GetById(id);
+        public Task<T?> GetAsync(Guid id, CancellationToken cancellationToken = default)
+            => _repository.GetByIdAsync(id, cancellationToken);
 
-        public void Create(T entity) => _repository.Add(entity);
+        public Task CreateAsync(T entity, CancellationToken cancellationToken = default)
+            => _repository.AddAsync(entity, cancellationToken);
 
-        public void Update(T entity) => _repository.Update(entity);
+        public Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
+            => _repository.UpdateAsync(entity, cancellationToken);
 
-        public void Delete(Guid id) => _repository.Delete(id);
+        public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+            => _repository.DeleteAsync(id, cancellationToken);
     }
 }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Portfolio.Domain.Entities;
 
 namespace Portfolio.Infrastructure.Data
@@ -10,6 +10,12 @@ namespace Portfolio.Infrastructure.Data
         {
         }
 
-        public DbSet<Mensagem> Mensagens { get; set; }
+        public DbSet<Mensagem> Mensagens => Set<Mensagem>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        }
     }
 }

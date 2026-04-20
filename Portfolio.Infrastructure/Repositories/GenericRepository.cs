@@ -1,11 +1,11 @@
-﻿using Portfolio.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using Portfolio.Domain.Entities;
 using Portfolio.Domain.Interface;
 using Portfolio.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace Portfolio.Infrastructure.Repositories
 {
-    public class GenericRepository<T> : IRepository<T> where T : EntityBase
+    public class GenericRepository<T> : IRepository<T> where T : Entity
     {
         protected readonly AppDbContext _context;
         protected readonly DbSet<T> _dbSet;
@@ -16,27 +16,31 @@ namespace Portfolio.Infrastructure.Repositories
             _dbSet = context.Set<T>();
         }
 
-        public IEnumerable<T> GetAll() => _dbSet.ToList();
+        public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
+            => await _dbSet.AsNoTracking().ToListAsync(cancellationToken);
 
-        public T? GetById(Guid id) => _dbSet.Find(id);
+        public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => await _dbSet.FindAsync(new object[] { id }, cancellationToken);
 
-        public void Add(T entity)
+        public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
         {
-            _dbSet.Add(entity);
+            await _dbSet.AddAsync(entity, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
-        public void Update(T entity)
+        public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
         {
             _dbSet.Update(entity);
+            await _context.SaveChangesAsync(cancellationToken);
         }
 
-        public void Delete(Guid id)
+        public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
         {
-            var entity = GetById(id);
-            if (entity != null)
-            {
-                _dbSet.Remove(entity);
-            }
+            var entity = await _dbSet.FindAsync(new object[] { id }, cancellationToken);
+            if (entity is null) return;
+
+            _dbSet.Remove(entity);
+            await _context.SaveChangesAsync(cancellationToken);
         }
     }
 }

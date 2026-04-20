@@ -6,11 +6,11 @@ namespace Portfolio.Tests.Domain
     public class MensagemTests
     {
         [Fact]
-        public void Mensagem_DeveHerdarDeEntityBase_ComIdGuid()
+        public void Mensagem_DeveHerdarDeEntity_ComIdGuid()
         {
             var mensagem = new Mensagem { Texto = "teste" };
 
-            mensagem.Should().BeAssignableTo<EntityBase>();
+            mensagem.Should().BeAssignableTo<Entity>();
             mensagem.Id.Should().NotBe(Guid.Empty);
         }
 
