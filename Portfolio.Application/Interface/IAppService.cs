@@ -2,12 +2,12 @@ using Portfolio.Domain.Entities;
 
 namespace Portfolio.Application.Interface
 {
-    public interface IAppService<T> where T : Entity
+    public interface IAppService<TEntity, TDto> where TEntity : Entity
     {
-        Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<T?> GetAsync(Guid id, CancellationToken cancellationToken = default);
-        Task CreateAsync(T entity, CancellationToken cancellationToken = default);
-        Task UpdateAsync(T entity, CancellationToken cancellationToken = default);
+        Task<IEnumerable<TDto>> GetAllAsync(CancellationToken cancellationToken = default);
+        Task<TDto?> GetAsync(Guid id, CancellationToken cancellationToken = default);
+        Task<TDto> CreateAsync(TDto dto, CancellationToken cancellationToken = default);
+        Task<TDto> UpdateAsync(Guid id, TDto dto, CancellationToken cancellationToken = default);
         Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     }
 }

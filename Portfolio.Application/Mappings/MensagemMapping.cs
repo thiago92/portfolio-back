@@ -9,8 +9,9 @@ namespace Portfolio.Application.Mappings
         public void Register(TypeAdapterConfig config)
         {
             config.NewConfig<Mensagem, MensagemDto>();
-            config.NewConfig<CreateMensagemDto, Mensagem>();
-            config.NewConfig<UpdateMensagemDto, Mensagem>();
+
+            config.NewConfig<MensagemDto, Mensagem>()
+                .Ignore(dest => dest.Id);
         }
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Portfolio.Application.Exceptions;
 
 namespace PortfolioApi.Middlewares
 {
@@ -21,15 +22,43 @@ namespace PortfolioApi.Middlewares
             Exception exception,
             CancellationToken cancellationToken)
         {
-            _logger.LogError(exception, "Exceção não tratada: {Message}", exception.Message);
+            var problem = exception switch
+            {
+                EntityValidationException ev => new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Validação falhou.",
+                    Detail = string.Join(" | ", ev.Errors),
+                    Type = "https://httpstatuses.io/400"
+                },
+                EntityNotFoundException en => new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Recurso não encontrado.",
+                    Detail = en.Message,
+                    Type = "https://httpstatuses.io/404"
+                },
+                _ => BuildUnexpectedProblem(exception)
+            };
 
+            if (problem.Status == StatusCodes.Status500InternalServerError)
+                _logger.LogError(exception, "Exceção não tratada: {Message}", exception.Message);
+
+            problem.Instance = httpContext.Request.Path;
+
+            httpContext.Response.StatusCode = problem.Status!.Value;
+            await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+            return true;
+        }
+
+        private ProblemDetails BuildUnexpectedProblem(Exception exception)
+        {
             var problem = new ProblemDetails
             {
                 Status = StatusCodes.Status500InternalServerError,
                 Title = "Ocorreu um erro inesperado.",
                 Detail = BuildDetail(exception),
-                Type = "https://httpstatuses.io/500",
-                Instance = httpContext.Request.Path
+                Type = "https://httpstatuses.io/500"
             };
 
             if (_environment.IsDevelopment())
@@ -43,10 +72,7 @@ namespace PortfolioApi.Middlewares
                 }
             }
 
-            httpContext.Response.StatusCode = problem.Status.Value;
-            await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
-
-            return true;
+            return problem;
         }
 
         private static string BuildDetail(Exception exception)

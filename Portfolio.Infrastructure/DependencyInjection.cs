@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Portfolio.Domain.Interface;
 using Portfolio.Infrastructure.Data;
 using Portfolio.Infrastructure.Repositories;
+using Portfolio.Infrastructure.Resolvers;
 
 namespace Portfolio.Infrastructure
 {
@@ -20,6 +21,9 @@ namespace Portfolio.Infrastructure
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
             services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
+            services.AddScoped<IMensagemRepository, MensagemRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
+            services.AddScoped<IUserResolver, CurrentUserResolver>();
 
             return services;
         }

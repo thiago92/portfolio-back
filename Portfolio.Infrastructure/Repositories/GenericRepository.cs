@@ -16,31 +16,16 @@ namespace Portfolio.Infrastructure.Repositories
             _dbSet = context.Set<T>();
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
+        public virtual async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
             => await _dbSet.AsNoTracking().ToListAsync(cancellationToken);
 
-        public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        public virtual async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
             => await _dbSet.FindAsync(new object[] { id }, cancellationToken);
 
-        public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
-        {
-            await _dbSet.AddAsync(entity, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        public virtual void Add(T entity) => _dbSet.Add(entity);
 
-        public async Task UpdateAsync(T entity, CancellationToken cancellationToken = default)
-        {
-            _dbSet.Update(entity);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        public virtual void Update(T entity) => _dbSet.Update(entity);
 
-        public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
-        {
-            var entity = await _dbSet.FindAsync(new object[] { id }, cancellationToken);
-            if (entity is null) return;
-
-            _dbSet.Remove(entity);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        public virtual void Remove(T entity) => _dbSet.Remove(entity);
     }
 }
