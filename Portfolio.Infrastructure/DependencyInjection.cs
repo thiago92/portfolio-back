@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Portfolio.Domain.Interface;
+using Portfolio.Infrastructure.Auth;
 using Portfolio.Infrastructure.Data;
 using Portfolio.Infrastructure.Repositories;
-using Portfolio.Infrastructure.Resolvers;
 
 namespace Portfolio.Infrastructure
 {
@@ -22,8 +22,13 @@ namespace Portfolio.Infrastructure
 
             services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IMensagemRepository, MensagemRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IHabilidadeRepository, HabilidadeRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
-            services.AddScoped<IUserResolver, CurrentUserResolver>();
+
+            services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+            services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
 
             return services;
         }

@@ -10,6 +10,8 @@ namespace Portfolio.Domain
         {
             services.AddScoped(typeof(IDomainService<>), typeof(DomainService<>));
             services.AddScoped<IMensagemService, MensagemService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IHabilidadeService, HabilidadeService>();
 
             return services;
         }

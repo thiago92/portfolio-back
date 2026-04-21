@@ -15,6 +15,8 @@ namespace Portfolio.Application
             var assembly = Assembly.GetExecutingAssembly();
 
             services.AddScoped<IMensagensAppService, MensagensAppService>();
+            services.AddScoped<IAuthAppService, AuthAppService>();
+            services.AddScoped<IHabilidadesAppService, HabilidadesAppService>();
 
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(assembly);

@@ -11,6 +11,8 @@ namespace Portfolio.Infrastructure.Data
         }
 
         public DbSet<Mensagem> Mensagens => Set<Mensagem>();
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Habilidade> Habilidades => Set<Habilidade>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

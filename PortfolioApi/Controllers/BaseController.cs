@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Portfolio.Application.Interface;
 using Portfolio.Domain.Entities;
@@ -16,10 +17,12 @@ namespace PortfolioApi.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public virtual async Task<IActionResult> Get(CancellationToken cancellationToken)
             => Ok(await _service.GetAllAsync(cancellationToken));
 
         [HttpGet("{id:guid}")]
+        [AllowAnonymous]
         public virtual async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
         {
             var dto = await _service.GetAsync(id, cancellationToken);
@@ -27,14 +30,17 @@ namespace PortfolioApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public virtual async Task<IActionResult> Post([FromBody] TDto dto, CancellationToken cancellationToken)
             => Ok(await _service.CreateAsync(dto, cancellationToken));
 
         [HttpPut("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         public virtual async Task<IActionResult> Put(Guid id, [FromBody] TDto dto, CancellationToken cancellationToken)
             => Ok(await _service.UpdateAsync(id, dto, cancellationToken));
 
         [HttpDelete("{id:guid}")]
+        [Authorize(Roles = "Admin")]
         public virtual async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             await _service.DeleteAsync(id, cancellationToken);

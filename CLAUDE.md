@@ -76,6 +76,7 @@ HTTP → Controller (herda BaseController<TEntity, TDto>)
 - **Métodos `virtual`** nas classes base (`AppService`, `DomainService`, `GenericRepository`, `BaseController`) para permitir `override`.
 - **FluentValidation** para validação de DTO. O `AppService` recebe `IEnumerable<IValidator<TDto>>` e aplica se houver validator registrado.
 - **Mapster (`IRegister`)** para mapping DTO↔Entity, com `.Ignore(dest => dest.Id)` na direção DTO→Entity como defesa em profundidade.
+- **Autorização no `BaseController`**: GET e GET-by-id são `[AllowAnonymous]` (leitura pública); POST/PUT/DELETE são `[Authorize(Roles = "Admin")]`. Para mudar em um controller específico, sobrescrever o método com outro atributo — não mexer na base.
 
 ---
 
@@ -117,6 +118,8 @@ BaseController<TEntity, TDto>       // abstrata, 5 rotas CRUD
 ## 5. Checklist para adicionar nova entidade (`Foo`)
 
 Siga esta ordem. Cada subclasse fica idealmente só com o construtor.
+
+> **Entidades sem CRUD público** (ex.: `User`, que só participa do fluxo de login) pulam os passos de DTO/Mapping/Validator/AppService/Controller (6–11 e 16) e mantêm apenas Domain + Map + Repository + registro de DI + migration.
 
 **Domain:**
 1. `Portfolio.Domain/Entities/Foo.cs` → herda `Entity` (ou `EntityAudited` se precisar auditoria).
@@ -205,6 +208,7 @@ Para adicionar rotas extras, criar método no controller específico **sem** mex
 
 - `EntityNotFoundException` (Application) → GlobalExceptionHandler devolve **404**.
 - `EntityValidationException` (Application) → GlobalExceptionHandler devolve **400** com lista de erros.
+- `BadCredentialsException` (Application) → GlobalExceptionHandler devolve **401**.
 - Qualquer outra → **500** com detalhe (stack trace só em Development).
 
 ### 6.5 Auditoria (automática)
@@ -214,7 +218,7 @@ Se uma entidade precisa dos campos `CreationTime`, `CreationUserId`, `Modificati
 - **Added** → `CreationTime = DateTime.UtcNow`, `CreationUserId = IUserResolver.GetCurrentUserId()`.
 - **Modified** → `ModificationTime = DateTime.UtcNow`, `ModificationUserId = ...`; `CreationTime`/`CreationUserId` são explicitamente marcados como `IsModified = false` (preservados).
 
-Enquanto não houver autenticação, `IUserResolver` é resolvido por `CurrentUserResolver` que retorna `Guid.Empty`. Quando plugar JWT, trocar a implementação por uma que leia o claim do `HttpContext` — o UoW não muda.
+`IUserResolver` é resolvido por `HttpContextUserResolver` (registrado em `PortfolioApi/Program.cs`), que lê o claim `sub`/`NameIdentifier` do JWT via `IHttpContextAccessor`. Requests anônimos (ex.: GETs públicos) retornam `Guid.Empty` — o UoW aceita normalmente e os campos de auditoria ficam zerados nesses casos.
 
 ### 6.6 Naming
 
@@ -222,7 +226,24 @@ Enquanto não houver autenticação, `IUserResolver` é resolvido por `CurrentUs
 - **Inglês** para infraestrutura técnica (`Repository`, `Service`, `DbContext`, `UnitOfWork`).
 - Prefixo `I` em interfaces.
 - Sufixo `Dto` em DTOs, `Map` em mappings de EF, `Validator` em validators.
-- Tabelas no banco em **snake_case minúsculo plural** (`mensagens`, `usuarios`).
+- Tabelas no banco em **snake_case minúsculo plural** (`mensagens`, `users`).
+
+### 6.7 Autenticação & autorização
+
+- **Login**: `POST /api/auth/login` com `LoginDto` (`Email` + `Senha`) → `TokenDto` (`AccessToken` + `ExpiresAt`). `AuthController` está marcado `[AllowAnonymous]` e **não** herda `BaseController` (não é CRUD).
+- **AppService atípico**: `AuthAppService` implementa `IAuthAppService` diretamente (não herda `AppService<,>`). Valida `LoginDto` com FluentValidation, consulta `IUserService`, verifica senha com `IPasswordHasher` e emite token via `IJwtTokenGenerator`. Não usa `IUnitOfWork` porque é read-only.
+- **JWT**: configurado em `PortfolioApi/Program.cs` via `AddJwtBearer`. Settings em `JwtSettings` (seção `JwtSettings` do `appsettings`): `Issuer`, `Audience`, `SigningKey`, `ExpirationHours`. Claims emitidas: `sub` (Id), `email`, `role`, `jti`. `ClockSkew = 0`.
+- **Roles**: enum `ERoleUsuario` — `Admin = 1`, `Visitante = 2`. Admin acessa mutations do `BaseController`; Visitante (e anônimos) só os GETs públicos.
+- **Password**: `IPasswordHasher` (Domain) implementado por `BCryptPasswordHasher` (Infrastructure) com `BCrypt.Net-Next`.
+- **Entidade `User`**: caso especial — tem `UserMap`, `UserRepository`, `UserService`, mas **não** tem DTO/Controller/Validator. Só participa do fluxo de login e é criada via seeder.
+- **Seed** (`DatabaseSeeder.SeedAsync`, idempotente por Id):
+  - Admin: `00000000-0000-0000-0000-000000000001`, `thiago.dsouza1992@gmail.com` / `Admin@2026`.
+  - Visitante: `00000000-0000-0000-0000-000000000002`, `visitante@visitante.com.br` / `123456`.
+- **Swagger**: login → copiar `accessToken` → botão **Authorize** → colar token (sem `Bearer `).
+
+### 6.8 Schema guard no boot
+
+`DatabaseSeeder.EnsureSchemaUpToDateAsync` roda antes do seed e consulta `Database.GetPendingMigrationsAsync`. Se houver migrations pendentes, lança `InvalidOperationException` listando quais e apontando o comando `dotnet ef database update`. A app se recusa a subir com schema desalinhado — vale para dev **e** prod. Não fazemos auto-migrate no boot: em produção, migration é passo separado do deploy.
 
 ---
 
@@ -237,6 +258,10 @@ dotnet test Portfolio.Tests/Portfolio.Tests.csproj
 dotnet ef migrations add <Nome> -p Portfolio.Infrastructure -s PortfolioApi
 dotnet ef database update     -p Portfolio.Infrastructure -s PortfolioApi
 
+# Migration bundle (produção — passo separado do deploy, não depende do SDK/EF tools no servidor)
+dotnet ef migrations bundle -p Portfolio.Infrastructure -s PortfolioApi -o efbundle
+./efbundle --connection "<CONNECTION_STRING>"
+
 # Rodar a API
 dotnet run --project PortfolioApi/PortfolioApi.csproj --launch-profile http
 # → http://localhost:5286/swagger
@@ -246,7 +271,7 @@ dotnet run --project PortfolioApi/PortfolioApi.csproj --launch-profile http
 
 ## 8. Débitos técnicos conhecidos
 
-- Credenciais do MySQL estão em `appsettings.Development.json` (ver DDD_STANDARDS §8.8) — mover para User Secrets / Azure Key Vault antes de produção.
-- Sem autenticação / autorização configurada. `CurrentUserResolver` sempre devolve `Guid.Empty`; quando plugar JWT, substituir por implementação que lê claim do `HttpContext`.
+- Credenciais do MySQL e `JwtSettings.SigningKey` estão em `appsettings.Development.json` (ver DDD_STANDARDS §8.8) — mover para User Secrets / Azure Key Vault antes de produção.
 - Sem rate limiting, CORS restritivo, security headers.
-- Testes de Infrastructure e Controllers inexistentes (requerem `EF InMemory` / `WebApplicationFactory`).
+- Sem refresh token / logout / revogação de JWT — o `TokenDto` atual só tem `AccessToken`. Se for necessário (ex.: sessões longas), adicionar fluxo de refresh.
+- Testes de Infrastructure, Controllers e fluxo de Auth inexistentes (requerem `EF InMemory` / `WebApplicationFactory`).

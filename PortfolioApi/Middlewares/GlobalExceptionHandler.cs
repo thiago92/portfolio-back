@@ -38,6 +38,13 @@ namespace PortfolioApi.Middlewares
                     Detail = en.Message,
                     Type = "https://httpstatuses.io/404"
                 },
+                BadCredentialsException bc => new ProblemDetails
+                {
+                    Status = StatusCodes.Status401Unauthorized,
+                    Title = "Credenciais inválidas.",
+                    Detail = bc.Message,
+                    Type = "https://httpstatuses.io/401"
+                },
                 _ => BuildUnexpectedProblem(exception)
             };
 
