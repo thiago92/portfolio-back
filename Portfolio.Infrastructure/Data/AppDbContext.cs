@@ -13,6 +13,10 @@ namespace Portfolio.Infrastructure.Data
         public DbSet<Mensagem> Mensagens => Set<Mensagem>();
         public DbSet<User> Users => Set<User>();
         public DbSet<Habilidade> Habilidades => Set<Habilidade>();
+        public DbSet<ProjetoCarousel> ProjetosCarousel => Set<ProjetoCarousel>();
+        public DbSet<Trabalho> Trabalhos => Set<Trabalho>();
+        public DbSet<LinkSocial> LinksSociais => Set<LinkSocial>();
+        public DbSet<Contato> Contatos => Set<Contato>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

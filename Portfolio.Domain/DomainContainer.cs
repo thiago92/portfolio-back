@@ -12,6 +12,10 @@ namespace Portfolio.Domain
             services.AddScoped<IMensagemService, MensagemService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IHabilidadeService, HabilidadeService>();
+            services.AddScoped<IProjetoCarouselService, ProjetoCarouselService>();
+            services.AddScoped<ITrabalhoService, TrabalhoService>();
+            services.AddScoped<ILinkSocialService, LinkSocialService>();
+            services.AddScoped<IContatoService, ContatoService>();
 
             return services;
         }

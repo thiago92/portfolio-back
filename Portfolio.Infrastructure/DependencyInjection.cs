@@ -24,6 +24,10 @@ namespace Portfolio.Infrastructure
             services.AddScoped<IMensagemRepository, MensagemRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IHabilidadeRepository, HabilidadeRepository>();
+            services.AddScoped<IProjetoCarouselRepository, ProjetoCarouselRepository>();
+            services.AddScoped<ITrabalhoRepository, TrabalhoRepository>();
+            services.AddScoped<ILinkSocialRepository, LinkSocialRepository>();
+            services.AddScoped<IContatoRepository, ContatoRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork.UnitOfWork>();
 
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
