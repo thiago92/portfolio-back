@@ -245,6 +245,16 @@ Se uma entidade precisa dos campos `CreationTime`, `CreationUserId`, `Modificati
 
 `DatabaseSeeder.EnsureSchemaUpToDateAsync` roda antes do seed e consulta `Database.GetPendingMigrationsAsync`. Se houver migrations pendentes, lança `InvalidOperationException` listando quais e apontando o comando `dotnet ef database update`. A app se recusa a subir com schema desalinhado — vale para dev **e** prod. Não fazemos auto-migrate no boot: em produção, migration é passo separado do deploy.
 
+### 6.9 CORS
+
+Origins lidas de `AllowedOrigins` no `appsettings` (array de strings):
+- `appsettings.Development.json` → `http://localhost:5173` (Vite do front local).
+- `appsettings.json` → `https://thiagotech.dev.br` (front em produção).
+
+Policy: `WithOrigins(...) + AllowAnyHeader() + AllowAnyMethod()`. **Sem `AllowCredentials()`** — JWT em header `Authorization: Bearer` não é credential no sentido CORS, então não precisa. Se migrar pra cookie-auth, aí precisa.
+
+Middleware (`app.UseCors()`) fica **entre** `UseHttpsRedirection()` e `UseAuthentication()` — ordem obrigatória pra que preflight OPTIONS seja respondido antes do pipeline de auth. Adicionar novo origin sem rebuild: env var na Render `AllowedOrigins__0=<url1>`, `AllowedOrigins__1=<url2>` (dois underscores + índice começando em 0).
+
 ---
 
 ## 7. Comandos úteis
@@ -272,6 +282,6 @@ dotnet run --project PortfolioApi/PortfolioApi.csproj --launch-profile http
 ## 8. Débitos técnicos conhecidos
 
 - Credenciais do MySQL e `JwtSettings.SigningKey` estão em `appsettings.Development.json` (ver DDD_STANDARDS §8.8) — mover para User Secrets / Azure Key Vault antes de produção.
-- Sem rate limiting, CORS restritivo, security headers.
+- Sem rate limiting e sem security headers (CSP, HSTS, X-Frame-Options etc.).
 - Sem refresh token / logout / revogação de JWT — o `TokenDto` atual só tem `AccessToken`. Se for necessário (ex.: sessões longas), adicionar fluxo de refresh.
 - Testes de Infrastructure, Controllers e fluxo de Auth inexistentes (requerem `EF InMemory` / `WebApplicationFactory`).
