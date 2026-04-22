@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Portfolio.Domain.Interface;
+using Portfolio.Infrastructure.AI;
 using Portfolio.Infrastructure.Auth;
 using Portfolio.Infrastructure.Data;
 using Portfolio.Infrastructure.Repositories;
@@ -20,6 +21,8 @@ namespace Portfolio.Infrastructure
             services.AddDbContext<AppDbContext>(options =>
                 options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
+            services.AddMemoryCache();
+
             services.AddScoped(typeof(IRepository<>), typeof(GenericRepository<>));
             services.AddScoped<IMensagemRepository, MensagemRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
@@ -33,6 +36,10 @@ namespace Portfolio.Infrastructure
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
             services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
             services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+
+            services.Configure<AnthropicSettings>(configuration.GetSection(AnthropicSettings.SectionName));
+            services.AddSingleton<ITranslationProvider, TranslationProvider>();
+            services.AddSingleton<IPortfolioAssistantClient, ClaudePortfolioAssistantClient>();
 
             return services;
         }

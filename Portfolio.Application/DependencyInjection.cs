@@ -21,6 +21,7 @@ namespace Portfolio.Application
             services.AddScoped<ITrabalhosAppService, TrabalhosAppService>();
             services.AddScoped<ILinksSociaisAppService, LinksSociaisAppService>();
             services.AddScoped<IContatoAppService, ContatoAppService>();
+            services.AddScoped<IChatAppService, ChatAppService>();
 
             var mapsterConfig = TypeAdapterConfig.GlobalSettings;
             mapsterConfig.Scan(assembly);

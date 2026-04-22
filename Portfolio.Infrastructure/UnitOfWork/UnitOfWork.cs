@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Caching.Memory;
 using Portfolio.Domain.Interface;
 using Portfolio.Domain.Interface.Markers;
 using Portfolio.Infrastructure.Data;
@@ -10,12 +11,14 @@ namespace Portfolio.Infrastructure.UnitOfWork
     {
         private readonly AppDbContext _context;
         private readonly IUserResolver _userResolver;
+        private readonly IMemoryCache _cache;
         private readonly Stack<IDbContextTransaction> _transactions = new();
 
-        public UnitOfWork(AppDbContext context, IUserResolver userResolver)
+        public UnitOfWork(AppDbContext context, IUserResolver userResolver, IMemoryCache cache)
         {
             _context = context;
             _userResolver = userResolver;
+            _cache = cache;
         }
 
         public void Begin()
@@ -24,8 +27,11 @@ namespace Portfolio.Infrastructure.UnitOfWork
 
         public async Task<int> Confirm(CancellationToken cancellationToken = default)
         {
+            var touchedTypes = CollectTouchedTypes();
             AplicarAuditoria();
-            return await _context.SaveChangesAsync(cancellationToken);
+            var result = await _context.SaveChangesAsync(cancellationToken);
+            InvalidateCache(touchedTypes);
+            return result;
         }
 
         public async Task BeginTransaction(CancellationToken cancellationToken = default)
@@ -42,9 +48,11 @@ namespace Portfolio.Infrastructure.UnitOfWork
             var transaction = _transactions.Pop();
             try
             {
+                var touchedTypes = CollectTouchedTypes();
                 AplicarAuditoria();
                 await _context.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
+                InvalidateCache(touchedTypes);
             }
             finally
             {
@@ -65,6 +73,22 @@ namespace Portfolio.Infrastructure.UnitOfWork
             {
                 await transaction.DisposeAsync();
             }
+        }
+
+        private HashSet<string> CollectTouchedTypes()
+        {
+            return _context.ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Added
+                         || e.State == EntityState.Modified
+                         || e.State == EntityState.Deleted)
+                .Select(e => e.Entity.GetType().Name)
+                .ToHashSet();
+        }
+
+        private void InvalidateCache(IEnumerable<string> typeNames)
+        {
+            foreach (var typeName in typeNames)
+                _cache.Remove(CacheKeys.All(typeName));
         }
 
         private void AplicarAuditoria()
